@@ -1,0 +1,54 @@
+diff -r -u jest-race-condition-repro2/node_modules/jest-jasmine2/build/jasmine/Env.js jest-race-condition-repro/node_modules/jest-jasmine2/build/jasmine/Env.js
+--- jest-race-condition-repro2/node_modules/jest-jasmine2/build/jasmine/Env.js	2020-08-13 09:34:54.000000000 +0200
++++ jest-race-condition-repro/node_modules/jest-jasmine2/build/jasmine/Env.js	2020-08-17 22:55:20.000000000 +0200
+@@ -23,6 +23,8 @@
+   require('../assertionErrorMessage')
+ );
+ 
++const cls = require('simple-continuation-local-storage');
++
+ function _interopRequireDefault(obj) {
+   return obj && obj.__esModule ? obj : {default: obj};
+ }
+@@ -542,7 +544,11 @@
+             },
+ 
+             queueableFn: {
+-              fn,
++              fn(...args) {
++                cls.$init();
++                cls.testName = getSpecName(spec, suite);
++                return fn(...args);
++              },
+ 
+               timeout() {
+                 return timeout || j$._DEFAULT_TIMEOUT_INTERVAL;
+Only in jest-race-condition-repro/node_modules/jest-jasmine2/build/jasmine: Env.js.orig
+Only in jest-race-condition-repro/node_modules/jest-jasmine2/build/jasmine: Env.js.rej
+diff -r -u jest-race-condition-repro2/node_modules/jest-snapshot/build/index.js jest-race-condition-repro/node_modules/jest-snapshot/build/index.js
+--- jest-race-condition-repro2/node_modules/jest-snapshot/build/index.js	2020-08-13 09:34:54.000000000 +0200
++++ jest-race-condition-repro/node_modules/jest-snapshot/build/index.js	2020-08-17 22:56:52.000000000 +0200
+@@ -14,6 +14,8 @@
+ 
+ var utils = _interopRequireWildcard(require('./utils'));
+ 
++const cls = require('simple-continuation-local-storage');
++
+ function _interopRequireDefault(obj) {
+   return obj && obj.__esModule ? obj : {default: obj};
+ }
+@@ -316,6 +318,14 @@
+   context.dontThrow && context.dontThrow();
+   const {currentTestName, isNot, snapshotState} = context;
+ 
++    if (currentTestName != cls.testName) {
++      console.log("Trying to snapshot on a different test than the test running now", {
++        currentTestName,
++        cls: cls.testName
++      });
++      return { pass: true };
++    }
++
+   if (isNot) {
+     throw new Error(
+       (0, _jestMatcherUtils.matcherErrorMessage)(
